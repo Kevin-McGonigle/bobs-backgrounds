@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PIL.Image import Image, open as open_image
 from PIL.ImageFont import truetype, FreeTypeFont
 
@@ -12,9 +14,11 @@ def get_font(size: int = 48, custom_path: str = None) -> FreeTypeFont:
     return truetype(path, size)
 
 
-def save_output_image(image: Image) -> None:
-    # TODO: Add text to image
-    pass
+def save_output_image(image: Image, custom_path: str = None) -> str:
+    path = "output/bobs-background.png" if not custom_path else custom_path
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    image.save(path)
+    return path
 
 
 def main():
