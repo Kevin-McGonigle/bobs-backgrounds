@@ -1,9 +1,12 @@
 import time
 from pathlib import Path
 from shutil import move
+from sqlite3 import connect
 
 from PIL.Image import Image, open as open_image
 from PIL.ImageFont import truetype, FreeTypeFont
+
+DB = connect("resources/data/db.sqlite")
 
 
 def get_template_image(custom_path: str = None) -> Image:
