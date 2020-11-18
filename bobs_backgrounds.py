@@ -28,7 +28,7 @@ def get_font(path: str = "resources/fonts/font.ttf", size: int = 48) -> FreeType
     return truetype(path, size)
 
 
-def save_output_image(image: Image, path: str = "output/bobs-background.png") -> Path:
+def save_output_image(image: Image, path: str = "output/bobs_background.png") -> Path:
     """
     Save the image as a file.
     :param image: The image to save.
