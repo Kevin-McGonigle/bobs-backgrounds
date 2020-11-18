@@ -23,12 +23,18 @@ def get_font(path: str = "resources/fonts/font.ttf", size: int = 48) -> FreeType
     Get the font.
     :param path: The path to the location of the font's TTF file.
     :param size: The size to use for the font.
-    :return:
+    :return: The font.
     """
     return truetype(path, size)
 
 
 def save_output_image(image: Image, path: str = "output/bobs-background.png") -> Path:
+    """
+    Save the image as a file.
+    :param image: The image to save.
+    :param path: The path to the location to save the image to.
+    :return: The path to the location that the image was saved to.
+    """
     path = Path(path).absolute()
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -40,6 +46,11 @@ def save_output_image(image: Image, path: str = "output/bobs-background.png") ->
 
 
 def archive_image(path: Path) -> Path:
+    """
+    Archive the image.
+    :param path: The path to the location of the image to archive.
+    :return: The path to the location that the image was archived to.
+    """
     archive_dir = path.parent / "archive"
     archive_dir.mkdir(parents=True, exist_ok=True)
     archive_path = (archive_dir / (time.strftime("%Y%m%d-%H%M%S") + path.suffix)).absolute()
@@ -49,7 +60,7 @@ def archive_image(path: Path) -> Path:
     return archive_path
 
 
-def main():
+def main() -> None:
     image: Image = get_template_image()
 
     # TODO: Add text to image
