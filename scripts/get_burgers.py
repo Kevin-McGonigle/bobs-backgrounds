@@ -3,10 +3,11 @@ from typing import List
 
 import requests
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 
 class Burger:
-    def __init__(self, name: str, explanation: str = "", additional_information: str = "") -> None:
+    def __init__(self, name: str, explanation: str = None, additional_information: str = None) -> None:
         super().__init__()
         self.name = name
         self.explanation = explanation
@@ -14,7 +15,7 @@ class Burger:
 
 
 class Episode:
-    def __init__(self, number: int, name: str, burgers=None) -> None:
+    def __init__(self, number: int, name: str, burgers: List[Burger] = None) -> None:
         super().__init__()
         self.number = number
         self.name = name
@@ -28,7 +29,12 @@ class Season:
         self.episodes = episodes if episodes else []
 
 
-def get_html(url: str) -> str:
+def get_html(url: str = "https://bobs-burgers.fandom.com/wiki/Burger_of_the_Day") -> str:
+    """
+    Get HTML from the specified URL.
+    :param url: The URL to get HTML from.
+    :return: The retrieved HTML as a string.
+    """
     response = requests.get(url)
 
     if 200 <= response.status_code < 300:
@@ -37,24 +43,110 @@ def get_html(url: str) -> str:
     raise requests.HTTPError(response.reason)
 
 
-def get_season_episodes(soup):
-    season_episodes = {}
-    for season in [heading for heading in (soup.find("div", "mw-parser-output").find_all("h2", recursive=False)) if
-                   re.match(r"Season \d+", heading.text)][:8]:
-        episodes = []
-        for episode in season.find_next_siblings("h3"):
-            if episode.find_previous_sibling("h2") is not season:
+def get_burger(tag: Tag, season_number: int) -> Burger:
+    """
+    Parse burger information from HTML.
+    :param tag: The HTML tag to parse.
+    :param season_number: The season that the burger appears in.
+    :return: The parsed burger information.
+    """
+    if season_number < 9:
+        title = tag.find(text=True, recursive=False).strip().split(" - ")
+        name = title[0]
+        explanation = title[1] if len(title) > 1 else None
+
+        additional_information_list = tag.find("ul", recursive=False)
+        additional_information = ". ".join([list_item.text.strip(" \n.") for list_item in
+                                            additional_information_list.find_all("li",
+                                                                                 recursive=False)]
+                                           if additional_information_list else []) + "."
+        return Burger(name, explanation, additional_information)
+    else:
+        # TODO: Implement for season >= 9.
+        return Burger("Placeholder")
+
+
+def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
+    """
+    Parse episode information from HTML.
+    :param tag: The HTML tag to parse.
+    :param episode_number: The episode number.
+    :param season_number: The season that the episode appears in.
+    :return: The parsed episode information.
+    """
+    burgers = []
+    if season_number < 9:
+        burgers_list = tag.find_next_sibling("ul")
+        if burgers_list:
+            burgers = [get_burger(list_item, season_number) for list_item in
+                       burgers_list.find_all("li", recursive=False)]
+    else:
+        # TODO: Implement for season >= 9.
+        pass
+
+    return Episode(episode_number, tag.text.strip(), burgers)
+
+
+def get_season(tag: Tag) -> Season:
+    """
+    Parse season information from HTML.
+    :param tag: The HTML tag to parse.
+    :return: The parsed season information.
+    """
+    season_number = int(tag.text.strip().split()[-1])
+    episodes = []
+
+    if season_number < 9:
+        for episode_number, heading in enumerate(tag.find_next_siblings("h3"), 1):
+            if heading.find_previous_sibling("h2") is not tag:
                 break
-            episodes.append(episode)
+            episodes.append(get_episode(heading, episode_number, season_number))
+    else:
+        # TODO: Implement for Season >= 9.
+        pass
 
-        season_episodes[season] = episodes
-    return season_episodes
+    return Season(season_number, episodes)
 
 
-def main():
-    soup = BeautifulSoup(get_html("https://bobs-burgers.fandom.com/wiki/Burger_of_the_Day"), 'lxml')
-    season_episodes = get_season_episodes(soup)
-    print(season_episodes)
+def get_seasons(soup: BeautifulSoup) -> List[Season]:
+    """
+    Parse seasons from HTML.
+    :param soup: The soup to parse seasons from.
+    :return: A list of parsed seasons information.
+    """
+    return [get_season(heading) for heading in (soup.find("div", "mw-parser-output").find_all("h2", recursive=False)) if
+            re.match(r"Season \d+", heading.text)]
+
+
+def pretty_print_seasons(seasons: List[Season] = None) -> None:
+    """
+    Pretty print a list of seasons.
+    :param seasons: The seasons to pretty print.
+    """
+    if not seasons:
+        return
+
+    for season in seasons:
+        print(f"Season {season.number}")
+        for episode in season.episodes:
+            print(f"  Episode {episode.number}: {episode.name}")
+            for burger in episode.burgers:
+                print(f"    Burger: {burger.name}")
+                if burger.explanation:
+                    print(f"      Explanation: {burger.explanation}")
+                if burger.additional_information:
+                    print(f"      Additional Information: {burger.additional_information}")
+            print()
+        print()
+
+
+def main() -> None:
+    """
+    The main function.
+    """
+    soup: BeautifulSoup = BeautifulSoup(get_html(), 'lxml')
+    seasons = get_seasons(soup)
+    pretty_print_seasons(seasons)
 
 
 if __name__ == "__main__":
