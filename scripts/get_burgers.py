@@ -32,6 +32,7 @@ class Season:
 def get_html(url: str = "https://bobs-burgers.fandom.com/wiki/Burger_of_the_Day") -> str:
     """
     Get HTML from the specified URL.
+
     :param url: The URL to get HTML from.
     :return: The retrieved HTML as a string.
     """
@@ -46,6 +47,7 @@ def get_html(url: str = "https://bobs-burgers.fandom.com/wiki/Burger_of_the_Day"
 def get_burger(tag: Tag, season_number: int) -> Burger:
     """
     Parse burger information from HTML.
+
     :param tag: The HTML tag to parse.
     :param season_number: The season that the burger appears in.
     :return: The parsed burger information.
@@ -69,6 +71,7 @@ def get_burger(tag: Tag, season_number: int) -> Burger:
 def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
     """
     Parse episode information from HTML.
+
     :param tag: The HTML tag to parse.
     :param episode_number: The episode number.
     :param season_number: The season that the episode appears in.
@@ -90,6 +93,7 @@ def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
 def get_season(tag: Tag) -> Season:
     """
     Parse season information from HTML.
+
     :param tag: The HTML tag to parse.
     :return: The parsed season information.
     """
@@ -111,6 +115,7 @@ def get_season(tag: Tag) -> Season:
 def get_seasons(soup: BeautifulSoup) -> List[Season]:
     """
     Parse seasons from HTML.
+
     :param soup: The soup to parse seasons from.
     :return: A list of parsed seasons information.
     """
@@ -121,6 +126,7 @@ def get_seasons(soup: BeautifulSoup) -> List[Season]:
 def pretty_print_seasons(seasons: List[Season] = None) -> None:
     """
     Pretty print a list of seasons.
+
     :param seasons: The seasons to pretty print.
     """
     if not seasons:
