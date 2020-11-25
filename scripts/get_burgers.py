@@ -1,5 +1,6 @@
 import re
-from typing import List
+from pathlib import Path
+from typing import List, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -45,7 +46,7 @@ def get_html(url: str = "https://bobs-burgers.fandom.com/wiki/Burger_of_the_Day"
     raise requests.HTTPError(response.reason)
 
 
-def get_burger(tag: Tag, season_number: int) -> Burger:
+def get_burger(tag: Tag, season_number: int) -> Optional[Burger]:
     """
     Parse burger information from HTML.
 
@@ -54,16 +55,19 @@ def get_burger(tag: Tag, season_number: int) -> Burger:
     :return: The parsed burger information.
     """
     if season_number < 9:
-        title = tag.find(text=True, recursive=False).strip().split(" - ")
-        name = title[0]
-        explanation = title[1] if len(title) > 1 else None
+        try:
+            title = tag.find(text=True, recursive=False).strip().split(" - ")
+            name = title[0]
+            explanation = title[1] if len(title) > 1 else None
 
-        additional_information_list = tag.find("ul", recursive=False)
-        additional_information = ". ".join([list_item.text.strip(" \n.") for list_item in
-                                            additional_information_list.find_all("li",
-                                                                                 recursive=False)]
-                                           if additional_information_list else []) + "."
-        return Burger(name, explanation, additional_information)
+            additional_information_list = tag.find("ul", recursive=False)
+            additional_information = ". ".join([list_item.text.strip(" \n.") for list_item in
+                                                additional_information_list.find_all("li",
+                                                                                     recursive=False)]
+                                               if additional_information_list else []) + "."
+            return Burger(name, explanation, additional_information)
+        except Exception:
+            return None
     else:
         # TODO: Implement for season >= 9.
         return Burger("Placeholder")
@@ -80,10 +84,14 @@ def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
     """
     burgers = []
     if season_number < 9:
-        burgers_list = tag.find_next_sibling("ul")
-        if burgers_list:
-            burgers = [get_burger(list_item, season_number) for list_item in
-                       burgers_list.find_all("li", recursive=False)]
+        burgers_lists = tag.find_next_siblings("ul")
+        for burgers_list in burgers_lists:
+            if burgers_list:
+                if burgers_list.find_previous_sibling("h3") is not tag:
+                    break
+                burgers.extend([burger for burger in
+                                [get_burger(list_item, season_number) for list_item in
+                                 burgers_list.find_all("li", recursive=False)] if burger is not None])
     else:
         # TODO: Implement for season >= 9.
         pass
@@ -162,12 +170,16 @@ def save_as_excel(seasons: List[Season] = None) -> None:
         for episode in season.episodes:
             episode_data.append((episode.name, season.number, episode.number))
             for burger in episode.burgers:
-                burger_data.append((burger.name, burger.explanation, season.number, episode.number, burger.additional_information))
+                burger_data.append(
+                    (burger.name, burger.explanation, season.number, episode.number, burger.additional_information))
 
-    DataFrame(data=episode_data, columns=["name", "season", "number"]).to_excel("episodes.xlsx", index=False)
+    path = Path("output/spreadsheets")
+    path.mkdir(parents=True, exist_ok=True)
+
+    DataFrame(data=episode_data, columns=["name", "season", "number"]).to_excel(f"{path}/episodes.xlsx", index=False)
     DataFrame(data=burger_data,
               columns=["name", "explanation", "season_number", "episode_number", "additional_information"]).to_excel(
-        'burgers.xlsx', index=False)
+        f"{path}/burgers.xlsx", index=False)
 
 
 def main() -> None:
