@@ -4,6 +4,7 @@ from typing import List
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from pandas import DataFrame
 
 
 class Burger:
@@ -146,6 +147,29 @@ def pretty_print_seasons(seasons: List[Season] = None) -> None:
         print()
 
 
+def save_as_excel(seasons: List[Season] = None) -> None:
+    """
+    Save information in a list of seasons as an excel spreadsheet.
+
+    :param seasons: The seasons to save.
+    """
+    if not seasons:
+        return
+
+    episode_data = []
+    burger_data = []
+    for season in seasons:
+        for episode in season.episodes:
+            episode_data.append((episode.name, season.number, episode.number))
+            for burger in episode.burgers:
+                burger_data.append((burger.name, burger.explanation, season.number, episode.number, burger.additional_information))
+
+    DataFrame(data=episode_data, columns=["name", "season", "number"]).to_excel("episodes.xlsx", index=False)
+    DataFrame(data=burger_data,
+              columns=["name", "explanation", "season_number", "episode_number", "additional_information"]).to_excel(
+        'burgers.xlsx', index=False)
+
+
 def main() -> None:
     """
     The main function.
@@ -153,6 +177,7 @@ def main() -> None:
     soup: BeautifulSoup = BeautifulSoup(get_html(), 'lxml')
     seasons = get_seasons(soup)
     pretty_print_seasons(seasons)
+    save_as_excel(seasons)
 
 
 if __name__ == "__main__":
