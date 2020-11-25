@@ -115,8 +115,11 @@ def get_season(tag: Tag) -> Season:
                 break
             episodes.append(get_episode(heading, episode_number, season_number))
     else:
-        # TODO: Implement for Season >= 9.
-        pass
+        episode_number = 1
+        for tr in tag.find_next_sibling("table").find_all("tr")[1:]:
+            if len(tr.find_all("td")) == 3:
+                episode_number += 1
+                episodes.append(get_episode(tr, episode_number, season_number))
 
     return Season(season_number, episodes)
 
