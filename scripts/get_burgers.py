@@ -84,6 +84,7 @@ def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
     """
     burgers = []
     if season_number < 9:
+        episode_name = tag.text.strip()
         burgers_lists = tag.find_next_siblings("ul")
         for burgers_list in burgers_lists:
             if burgers_list:
@@ -93,10 +94,14 @@ def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
                                 [get_burger(list_item, season_number) for list_item in
                                  burgers_list.find_all("li", recursive=False)] if burger is not None])
     else:
-        # TODO: Implement for season >= 9.
-        pass
+        episode_name = tag.find("td").text.strip("\" \n")
+        burgers = [get_burger(tag, season_number)]
+        for tr in tag.find_next_siblings("tr"):
+            if len(tr.find_all("td")) == 3:
+                break
+            burgers.append(get_burger(tr, season_number))
 
-    return Episode(episode_number, tag.text.strip(), burgers)
+    return Episode(episode_number, episode_name, burgers)
 
 
 def get_season(tag: Tag) -> Season:
