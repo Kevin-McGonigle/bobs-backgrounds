@@ -55,22 +55,49 @@ def get_burger(tag: Tag, season_number: int) -> Optional[Burger]:
     :return: The parsed burger information.
     """
     if season_number < 9:
-        try:
-            title = tag.find(text=True, recursive=False).strip().split(" - ")
-            name = title[0]
-            explanation = title[1] if len(title) > 1 else None
+        title = tag.find(text=True, recursive=False).strip().split(" - ")
+        name = title[0]
+        explanation = title[1] if len(title) > 1 else None
 
-            additional_information_list = tag.find("ul", recursive=False)
-            additional_information = ". ".join([list_item.text.strip(" \n.") for list_item in
-                                                additional_information_list.find_all("li",
-                                                                                     recursive=False)]
-                                               if additional_information_list else []) + "."
-            return Burger(name, explanation, additional_information)
-        except Exception:
-            return None
+        additional_information_list = tag.find("ul", recursive=False)
+        additional_information = ". ".join([list_item.text.strip(" \n.") for list_item in
+                                            additional_information_list.find_all(
+                                                "li",
+                                                recursive=False
+                                            )] if additional_information_list else []) + "."
+
+        return Burger(name, explanation, additional_information)
     else:
         # TODO: Implement for season >= 9.
         return Burger("Placeholder")
+
+
+def get_burgers(season_number: int, tag: Tag) -> List[Burger]:
+    """
+    Get all burgers within the given episode.
+
+    :param season_number: The season number.
+    :param tag: The HTML tag of the episode.
+    :return: A list of all burgers within the given episode.
+    """
+    burgers = []
+    if season_number < 9:
+        burgers_lists = tag.find_next_siblings("ul")
+        for burgers_list in burgers_lists:
+            if burgers_list:
+                if burgers_list.find_previous_sibling("h3") is not tag:
+                    break
+                burgers.extend([burger for burger in
+                                [get_burger(list_item, season_number) for list_item in
+                                 burgers_list.find_all("li", recursive=False)] if burger is not None])
+    else:
+        burgers = [get_burger(tag, season_number)]
+        for tr in tag.find_next_siblings("tr"):
+            if len(tr.find_all("td")) == 3:
+                break
+            burgers.append(get_burger(tr, season_number))
+
+    return burgers
 
 
 def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
@@ -82,38 +109,21 @@ def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
     :param season_number: The season that the episode appears in.
     :return: The parsed episode information.
     """
-    burgers = []
-    if season_number < 9:
-        episode_name = tag.text.strip()
-        burgers_lists = tag.find_next_siblings("ul")
-        for burgers_list in burgers_lists:
-            if burgers_list:
-                if burgers_list.find_previous_sibling("h3") is not tag:
-                    break
-                burgers.extend([burger for burger in
-                                [get_burger(list_item, season_number) for list_item in
-                                 burgers_list.find_all("li", recursive=False)] if burger is not None])
-    else:
-        episode_name = tag.find("td").text.strip("\" \n")
-        burgers = [get_burger(tag, season_number)]
-        for tr in tag.find_next_siblings("tr"):
-            if len(tr.find_all("td")) == 3:
-                break
-            burgers.append(get_burger(tr, season_number))
+    episode_name = tag.text.strip() if season_number < 9 else tag.find("td").text.strip("\" \n")
+    burgers = get_burgers(season_number, tag)
 
     return Episode(episode_number, episode_name, burgers)
 
 
-def get_season(tag: Tag) -> Season:
+def get_episodes(season_number: int, tag: Tag) -> List[Episode]:
     """
-    Parse season information from HTML.
+    Get all episodes within the given season.
 
-    :param tag: The HTML tag to parse.
-    :return: The parsed season information.
+    :param season_number: The season number.
+    :param tag: The HTML tag of the season header.
+    :return: A list of all episodes within the given season.
     """
-    season_number = int(tag.text.strip().split()[-1])
     episodes = []
-
     if season_number < 9:
         for episode_number, heading in enumerate(tag.find_next_siblings("h3"), 1):
             if heading.find_previous_sibling("h2") is not tag:
@@ -125,6 +135,19 @@ def get_season(tag: Tag) -> Season:
             if len(tr.find_all("td")) == 3:
                 episode_number += 1
                 episodes.append(get_episode(tr, episode_number, season_number))
+
+    return episodes
+
+
+def get_season(tag: Tag) -> Season:
+    """
+    Parse season information from HTML.
+
+    :param tag: The HTML tag to parse.
+    :return: The parsed season information.
+    """
+    season_number = int(tag.text.strip().split()[-1])
+    episodes = get_episodes(season_number, tag)
 
     return Season(season_number, episodes)
 
