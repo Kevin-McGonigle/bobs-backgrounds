@@ -1,4 +1,3 @@
-# TODO: Refactor.
 # TODO: Populate tables.
 
 import re
@@ -66,16 +65,13 @@ def get_burger(tag: Tag, season_number: int) -> Optional[Burger]:
         if type(tag.contents[0]) == Tag and tag.contents[0].name == "ul":
             return
 
-        title = tag.find(text=True, recursive=False).strip().split(" - ")
-        name = title[0]
-        explanation = title[1] if len(title) > 1 else None
+        board_string = tag.find(text=True, recursive=False).strip().split(" - ")
+        name = board_string[0]
+        explanation = board_string[1] if len(board_string) > 1 else None
 
-        additional_information_list = tag.find("ul", recursive=False)
-        additional_information = ". ".join([list_item.text.strip(" \n.") for list_item in
-                                            additional_information_list.find_all(
-                                                "li",
-                                                recursive=False
-                                            )] if additional_information_list else []) + "."
+        ul = tag.find("ul", recursive=False)
+        additional_information = (". ".join(
+            [li.text.strip(" \n.") for li in ul.find_all("li", recursive=False)]) + ".") if ul else None
     else:
         tds = tag.find_all("td")
         if len(tds) < 2:
@@ -100,18 +96,15 @@ def get_burgers(season_number: int, tag: Tag) -> List[Burger]:
     """
     burgers = []
     if season_number < 9:
-        burgers_lists = tag.find_next_siblings("ul")
-        for burgers_list in burgers_lists:
-            if burgers_list:
-                if burgers_list.find_previous_sibling("h3") is not tag:
+        for ul in tag.find_next_siblings("ul"):
+            if ul:
+                if ul.find_previous_sibling("h3") is not tag:
                     break
                 burgers.extend([burger for burger in
                                 [get_burger(list_item, season_number) for list_item in
-                                 burgers_list.find_all("li", recursive=False)] if burger is not None])
+                                 ul.find_all("li", recursive=False)] if burger is not None])
     else:
-        burger = get_burger(tag, season_number)
-        burgers = [burger] if burger else []
-        for tr in tag.find_next_siblings("tr"):
+        for tr in [tag] + tag.find_next_siblings("tr"):
             if is_episode_tr(tr):
                 break
             burger = get_burger(tr, season_number)
@@ -130,10 +123,10 @@ def get_episode(tag: Tag, episode_number: int, season_number: int) -> Episode:
     :param season_number: The season that the episode appears in.
     :return: The parsed episode information.
     """
-    episode_name = tag.text.strip() if season_number < 9 else tag.find("td").text.strip("\" \n")
+    name = tag.text.strip() if season_number < 9 else tag.find("td").text.strip("\" \n")
     burgers = get_burgers(season_number, tag)
 
-    return Episode(episode_number, episode_name, burgers)
+    return Episode(episode_number, name, burgers)
 
 
 def get_episodes(season_number: int, tag: Tag) -> List[Episode]:
@@ -180,8 +173,8 @@ def get_seasons(soup: BeautifulSoup) -> List[Season]:
     :param soup: The soup to parse seasons from.
     :return: A list of parsed seasons information.
     """
-    return [get_season(heading) for heading in (soup.find("div", "mw-parser-output").find_all("h2", recursive=False)) if
-            re.match(r"Season \d+", heading.text)]
+    return [get_season(h2) for h2 in (soup.find("div", "mw-parser-output").find_all("h2", recursive=False)) if
+            re.match(r"Season \d+", h2.text)]
 
 
 def pretty_print_seasons(seasons: List[Season] = None) -> None:
@@ -238,8 +231,7 @@ def main() -> None:
     """
     The main function.
     """
-    soup: BeautifulSoup = BeautifulSoup(get_html(), 'lxml')
-    seasons = get_seasons(soup)
+    seasons = get_seasons(BeautifulSoup(get_html(), 'lxml'))
     pretty_print_seasons(seasons)
     save_as_excel(seasons)
 
