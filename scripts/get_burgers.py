@@ -1,3 +1,6 @@
+# TODO: Refactor.
+# TODO: Populate tables.
+
 import re
 from pathlib import Path
 from typing import List, Optional
