@@ -48,9 +48,15 @@ def get_html(url: str = "https://bobs-burgers.fandom.com/wiki/Burger_of_the_Day"
     raise requests.HTTPError(response.reason)
 
 
-def is_episode_tr(tr):
+def is_episode_tr(tr: Tag) -> bool:
+    """
+    Check if a table row for season 9 or later is an episode row.
+
+    :param tr: The table row to check.
+    :return: True if row is for an episode. False otherwise.
+    """
     tds = tr.find_all("td")
-    return len(tds) == 3 or (len(tds) == 2 and tds[1].get("colspan") == "2")
+    return tds and len(tds) == 3 or (len(tds) == 2 and tds[1].get("colspan") == "2")
 
 
 def get_burger(tag: Tag, season_number: int) -> Optional[Burger]:
@@ -104,7 +110,10 @@ def get_burgers(season_number: int, tag: Tag) -> List[Burger]:
                                 [get_burger(list_item, season_number) for list_item in
                                  ul.find_all("li", recursive=False)] if burger is not None])
     else:
-        for tr in [tag] + tag.find_next_siblings("tr"):
+        burger = get_burger(tag, season_number)
+        if burger is not None:
+            burgers.append(burger)
+        for tr in tag.find_next_siblings("tr"):
             if is_episode_tr(tr):
                 break
             burger = get_burger(tr, season_number)
