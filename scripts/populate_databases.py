@@ -2,12 +2,15 @@
 
 import re
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from pandas import DataFrame
+from sqlalchemy import create_engine, MetaData, select, Table
+
+CONNECTION = create_engine("sqlite:///resources/data/db.sqlite", echo=True).connect()
 
 
 class Burger:
@@ -209,15 +212,13 @@ def pretty_print_seasons(seasons: List[Season] = None) -> None:
         print()
 
 
-def save_as_excel(seasons: List[Season] = None) -> None:
+def seasons_to_dataframes(seasons: List[Season]) -> Tuple[DataFrame, DataFrame]:
     """
-    Save information in a list of seasons as an excel spreadsheet.
+    Save information in a list of seasons as a tuple of separate burgers and episodes dataframes.
 
     :param seasons: The seasons to save.
+    :return: The burgers data frame and the episodes dataframe, in that order.
     """
-    if not seasons:
-        return
-
     episode_data = []
     burger_data = []
     for season in seasons:
@@ -227,13 +228,67 @@ def save_as_excel(seasons: List[Season] = None) -> None:
                 burger_data.append(
                     (burger.name, burger.explanation, season.number, episode.number, burger.additional_information))
 
+    burgers_df = DataFrame(data=burger_data,
+                           columns=["name", "explanation", "season", "number", "additional_information"])
+    episodes_df = DataFrame(data=episode_data, columns=["name", "season", "number"])
+
+    burgers_df.index += 1
+    episodes_df.index += 1
+
+    return burgers_df, episodes_df
+
+
+def save_as_excel(seasons: List[Season] = None) -> None:
+    """
+    Save information in a list of seasons as an excel spreadsheet.
+
+    :param seasons: The seasons to save.
+    """
+    if not seasons:
+        return
+
+    burgers_df, episodes_df = seasons_to_dataframes(seasons)
+
     path = Path("output/spreadsheets")
     path.mkdir(parents=True, exist_ok=True)
 
-    DataFrame(data=episode_data, columns=["name", "season", "number"]).to_excel(f"{path}/episodes.xlsx", index=False)
-    DataFrame(data=burger_data,
-              columns=["name", "explanation", "season_number", "episode_number", "additional_information"]).to_excel(
+    episodes_df.to_excel(f"{path}/episodes.xlsx", index=False)
+    burgers_df.to_excel(
         f"{path}/burgers.xlsx", index=False)
+
+
+def get_episode_id(season: int, number: int) -> Optional[int]:
+    """
+    Get an episode's ID from the episodes table based on a burgers Dataframe row
+
+    :param season: The season number.
+    :param number: The episode number.
+    :return: The episode's ID.
+    """
+    table = Table("episodes", MetaData(), autoload=True, autoload_with=CONNECTION.engine)
+    result = CONNECTION.execute(select([table]).where(
+        table.columns.season == season).where(table.columns.number == number)).first()["id"]
+    return int(result) if result else None
+
+
+def save_as_sql(seasons: List[Season] = None) -> None:
+    """
+    Save information in a list of seasons to a SQL database.
+
+    :param seasons: The seasons to save.
+    """
+    if not seasons:
+        return
+
+    burgers_df, episodes_df = seasons_to_dataframes(seasons)
+
+    episodes_df.to_sql("episodes", CONNECTION, if_exists="append", index_label="id")
+
+    # noinspection PyTypeChecker
+    burgers_df["episode_id"] = burgers_df.apply(lambda row: get_episode_id(row["season"], row["number"]), axis=1)
+    burgers_df[["name", "explanation", "episode_id", "additional_information"]].to_sql("burgers", CONNECTION,
+                                                                                       if_exists="append",
+                                                                                       index_label="id")
 
 
 def main() -> None:
@@ -243,6 +298,7 @@ def main() -> None:
     seasons = get_seasons(BeautifulSoup(get_html(), 'lxml'))
     pretty_print_seasons(seasons)
     save_as_excel(seasons)
+    save_as_sql(seasons)
 
 
 if __name__ == "__main__":
