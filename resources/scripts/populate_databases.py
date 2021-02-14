@@ -10,7 +10,7 @@ from bs4.element import Tag
 from pandas import DataFrame
 from sqlalchemy import create_engine, MetaData, select, Table
 
-CONNECTION = create_engine("sqlite:///resources/data/db.sqlite", echo=True).connect()
+CONNECTION = create_engine("sqlite:///../data/db.sqlite", echo=True).connect()
 
 
 class Burger:
