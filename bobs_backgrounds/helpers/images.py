@@ -13,11 +13,10 @@ def add_text(template: PILImage, text: str, font: FreeTypeFont) -> PILImage:
     return template
 
 
-def archive(image: Image) -> Image:
+def archive(image: Image) -> None:
     if not image.archived_at:
         archive_file(Path(image.path))
         image.archived_at = today()
-
 
 
 def get_template(path: str = "resources/images/template.png") -> PILImage:
@@ -29,7 +28,7 @@ def get_template(path: str = "resources/images/template.png") -> PILImage:
     return open_image(path)
 
 
-def save(image: PILImage, path: str = "output/bobs_background.png") -> Path:
+def save(image: PILImage, path: str = "output/bobs-background.png") -> Path:
     """
     Save the image as a file.
     :param image: The image to save.
@@ -40,7 +39,7 @@ def save(image: PILImage, path: str = "output/bobs_background.png") -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
 
     if path.exists():
-        archive(path)
+        archive_file(path)
 
     image.save(path)
     return path

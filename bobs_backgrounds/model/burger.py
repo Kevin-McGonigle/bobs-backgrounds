@@ -1,12 +1,14 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from sqlalchemy import Column, ForeignKey, Integer, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.elements import Null
 
 from model import BASE
-from model.episode import Episode
-from model.image import Image
+
+if TYPE_CHECKING:
+    from model.episode import Episode
+    from model.image import Image
 
 
 class Burger(BASE):
@@ -18,5 +20,5 @@ class Burger(BASE):
     episode_id: str = Column(Integer, ForeignKey("episodes.id"), default=Null)
     additional_information: str = Column(Text, default=Null)
 
-    episode: Episode = relationship("Episode", back_populates="burgers")
+    episode: "Episode" = relationship("Episode", back_populates="burgers")
     images: List[Image] = relationship("Image", back_populates="burger")

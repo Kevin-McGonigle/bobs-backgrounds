@@ -1,10 +1,12 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from sqlalchemy import Column, Integer, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from model import BASE
-from model.burger import Burger
+
+if TYPE_CHECKING:
+    from model.burger import Burger
 
 
 class Episode(BASE):
