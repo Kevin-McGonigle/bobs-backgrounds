@@ -1,32 +1,26 @@
-import time
 from pathlib import Path
-from shutil import move
 
-from PIL.Image import Image, open as open_image
+from dateutil.utils import today
+from PIL.Image import Image as PILImage, open as open_image
 from PIL.ImageFont import FreeTypeFont
 
+from helpers.files import archive as archive_file
+from model.image import Image
 
-def add_text(template: Image, text: str, font: FreeTypeFont) -> Image:
+
+def add_text(template: PILImage, text: str, font: FreeTypeFont) -> PILImage:
     # TODO: Add text
     return template
 
 
-def archive(path: Path) -> Path:
-    """
-    Archive the image.
-    :param path: The path to the location of the image to archive.
-    :return: The path to the location that the image was archived to.
-    """
-    archive_dir = path.parent / "archive"
-    archive_dir.mkdir(parents=True, exist_ok=True)
-    archive_path = (archive_dir / (time.strftime("%Y%m%d-%H%M%S") + path.suffix)).absolute()
-
-    move(path.absolute(), archive_path)
-
-    return archive_path
+def archive(image: Image) -> Image:
+    if not image.archived_at:
+        archive_file(Path(image.path))
+        image.archived_at = today()
 
 
-def get_template(path: str = "resources/images/template.png") -> Image:
+
+def get_template(path: str = "resources/images/template.png") -> PILImage:
     """
     Get the template image.
     :param path: The path to the location of the template image.
@@ -35,7 +29,7 @@ def get_template(path: str = "resources/images/template.png") -> Image:
     return open_image(path)
 
 
-def save(image: Image, path: str = "output/bobs_background.png") -> Path:
+def save(image: PILImage, path: str = "output/bobs_background.png") -> Path:
     """
     Save the image as a file.
     :param image: The image to save.

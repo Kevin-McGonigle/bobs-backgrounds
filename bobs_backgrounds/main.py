@@ -1,7 +1,9 @@
 import helpers.fonts as fonts
 import helpers.images as images
+from model import with_session
 
 
+@with_session
 def main() -> None:
     template = images.get_template()
 
