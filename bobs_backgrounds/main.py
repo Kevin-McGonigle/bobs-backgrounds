@@ -1,15 +1,10 @@
-import helpers.fonts as fonts
 import helpers.images as images
 from model import with_session
 
 
 @with_session
 def main() -> None:
-    template = images.get_template()
-
-    font = fonts.get_font()
-
-    image = images.add_text(template, "", font)
+    image = images.add_text(images.get_template(), "This is a test.")
 
     images.save(image)
 

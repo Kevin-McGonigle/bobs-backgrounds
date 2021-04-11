@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-__ENGINE = create_engine("sqlite:///resources/data/db.sqlite", echo=True)
+__ENGINE = create_engine("sqlite:///../resources/data/db.sqlite", echo=True)
 BASE = declarative_base()
 
 
@@ -16,8 +16,7 @@ def with_session(function: Callable) -> Callable:
         :param kwargs: The key-word arguments to pass to the function.
         :return: The result of the function.
         """
-        engine_ = sessionmaker(__ENGINE)()
-        session = engine_
+        session = sessionmaker(__ENGINE)()
         try:
             result = function(*args, **kwargs)
             session.commit()

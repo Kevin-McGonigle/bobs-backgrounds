@@ -1,7 +1,7 @@
 from PIL.ImageFont import FreeTypeFont, truetype
 
 
-def get_font(path: str = "resources/fonts/font.ttf", size: int = 48) -> FreeTypeFont:
+def get_font(path: str = "../resources/fonts/font.ttf", size: int = 36) -> FreeTypeFont:
     """
     Get the specified font.
     :param path: The path to the location of the font's TTF file.
